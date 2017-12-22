@@ -1,0 +1,7 @@
+package trees
+
+sourcedir = src
+
+modules = Main
+
+opts = "-p contrib"
