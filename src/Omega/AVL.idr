@@ -45,9 +45,9 @@ rotl _ _ (Node More Leaf _ _) impossible
 rotl a u (Node Same b v c) = Right (Node More (Node Less a u b) v c)
 rotl a u (Node Less b v c) = Left (Node Same (Node Same a u b) v c)
 -- double rotations
-rotl a u (Node More (Node Same x m y) v c)= Left (Node Same (Node Same a u x) m (Node Same y v c))
-rotl a u (Node More (Node Less x m y) v c)= Left (Node Same (Node More a u x) m (Node Same y v c))
-rotl a u (Node More (Node More x m y) v c)= Left (Node Same (Node Same a u x) m (Node Less y v c))
+rotl a u (Node More (Node Same x m y) v c) = Left (Node Same (Node Same a u x) m (Node Same y v c))
+rotl a u (Node More (Node Less x m y) v c) = Left (Node Same (Node More a u x) m (Node Same y v c))
+rotl a u (Node More (Node More x m y) v c) = Left (Node Same (Node Same a u x) m (Node Less y v c))
 
 ins : Int -> Avl n -> Either (Avl n) (Avl (S n))
 ins x Leaf = Right (Node Same Leaf x Leaf)
@@ -117,7 +117,7 @@ del y (Node {hL} {hR} bal l x r) with (compare y x)
                 Same => Left (Node (rewrite sym prf in More) (rewrite prf in l) x rr)
                 Less => Right (S m ** (cong prf, Node Same (rewrite succInjective m hL prf in l) x rr))
                 More => 
-                  case rotr {n=m} (rewrite prf in l) x rr of --(rewrite prf in l) x rr of --rebalance
+                  case rotr {n=m} (rewrite prf in l) x rr of --rebalance
                     Left tl => Right (S (S m) ** (cong {f = S . S} prf, tl)) 
                     Right tr => Left (rewrite sym prf in tr)
 
@@ -125,5 +125,5 @@ delete : Int -> AVL -> AVL
 delete x (MkAVL t) = 
   case del x t of 
     Left tl => MkAVL tl
-    Right (_ ** (_,tr)) => MkAVL tr
+    Right (_**(_,tr)) => MkAVL tr
                     
