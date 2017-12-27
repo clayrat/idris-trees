@@ -87,10 +87,10 @@ DecRel LTE where
     | No  xny = No (xny . fromLteSucc)
 
 TotalOrd LTE where
-  Asym LTEZero LTEZero = Refl
+  Asym  LTEZero       LTEZero      = Refl
   Asym (LTESucc lxy) (LTESucc lyx) = cong $ Asym lxy lyx
 
-  Trns LTEZero _ = LTEZero
+  Trns  LTEZero       _            = LTEZero
   Trns (LTESucc lxy) (LTESucc lyz) = LTESucc (Trns lxy lyz)
 
   Totl {x=Z}           = Left LTEZero
