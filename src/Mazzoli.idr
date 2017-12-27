@@ -49,6 +49,7 @@ isort : (TotalOrd {t} o, DecRel {t} o) => List t -> List t
 isort @{to} @{dr} xs = toList (isort1 @{to} @{dr} xs)
 
 -- tree sort
+
 data Tree : (l, u : TopBot) -> Type -> Type where
   Leaf : BoundOrd l u -> Tree l u t
   Node : (x : t) -> Tree l (Box x) t -> Tree (Box x) u t -> Tree l u t
@@ -79,7 +80,7 @@ treeSort @{to} @{dr} xs = toList (treeSort1 @{to} @{dr} xs)
 -- for nats
 
 DecRel LTE where
-  decRel Z      _    = Yes LTEZero
+  decRel  Z     _    = Yes LTEZero
   decRel (S k)  Z    = No uninhabited
   decRel (S k) (S j) with (decRel {o=LTE} k j)
     | Yes xly = Yes (LTESucc xly)
