@@ -1,4 +1,4 @@
-module Mazzoli
+module Agda.Mazzoli
 
 %default total
 
@@ -16,10 +16,10 @@ interface TotalOrd (t : Type) (o : Rel t) | o where
 decOrd : (TotalOrd t o, DecEq t) => (a, b : t) -> Dec (o a b)
 decOrd @{to} a b =
   case Totl @{to} {x=a} {y=b} of
-    Left l => Yes l
-    Right r => case decEq a b of
+    Left oab => Yes oab
+    Right oba => case decEq a b of
                  Yes eq => Yes $ Rflx @{to} eq
-                 No neq => No $ \oab => neq $ Asym @{to} oab r
+                 No neq => No $ \oab => neq $ Asym @{to} oab oba
 
 -- insertion sort
 
@@ -81,6 +81,8 @@ treeSort1 @{to} xs = flatten (foldr (\x, xs => newLeaf @{to} x xs BotO TopO) (Le
 
 treeSort : (TotalOrd t o, DecEq t) => List t -> List t
 treeSort @{to} xs = toList (treeSort1 @{to} xs)
+
+-- for Nats 
 
 TotalOrd Nat LTE where
   Asym  LTEZero       LTEZero      = Refl
