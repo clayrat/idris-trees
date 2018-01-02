@@ -45,7 +45,7 @@ insert : (TotalOrd t o, DecEq t) => (x : t) -> OList l u t -> BoundOrd l (Box x)
 insert       x (Nil _)        lx xu = Cons x (Nil xu) lx
 insert @{to} x (Cons y ys ly) lx xu with (decOrd @{to} x y)
   | Yes xoy = Cons x (Cons y ys (Lift xoy)) lx
-  | No xny  = Cons y (insert  @{to} x ys (either Lift (\xoy => absurd $ xny xoy) (Totl {x=y} {y=x})) xu) ly
+  | No xny  = Cons y (insert  @{to} x ys (either Lift (absurd . xny) (Totl {x=y} {y=x})) xu) ly
 
 isort1 : (TotalOrd t o, DecEq t) => List t -> OList Bot Top t
 isort1 @{to} = foldr (\x, xs => insert @{to} x xs BotO TopO) (Nil BotO)
@@ -63,7 +63,7 @@ newLeaf : (TotalOrd t o, DecEq t) => (x : t) -> Tree l u t -> BoundOrd l (Box x)
 newLeaf       x (Leaf _)       lx xu = Node x (Leaf lx) (Leaf xu)
 newLeaf @{to} x (Node y ly yu) lx xu with (decOrd @{to} x y)
  | Yes xoy = Node y (newLeaf @{to} x ly lx (Lift xoy)) yu
- | No xny = Node y ly (newLeaf @{to} x yu (either (\xoy => absurd $ xny xoy) Lift Totl) xu)
+ | No xny = Node y ly (newLeaf @{to} x yu (either (absurd . xny) Lift Totl) xu)
 
 fromList : (TotalOrd t o, DecEq t) => List t -> Tree Bot Top t
 fromList @{to} = foldr (\x, xs => newLeaf @{to} x xs BotO TopO) (Leaf BotO)
