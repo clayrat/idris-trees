@@ -1,5 +1,7 @@
 module Haskell.DepDAG
 
+import Functor 
+
 import Data.Fin
 import Data.Vect
 
@@ -25,6 +27,9 @@ interface Succ1 (f : Nat -> Type) where
 Succ1 Fin where
   succ1 = FS
 
+(Functor f, Succ1 g) => Succ1 (CompF f g) where
+  succ1 (MkCompF x) = MkCompF (map succ1 x)
+
 -- Monad1  
 
 infixr 3 >>>=
@@ -33,18 +38,6 @@ interface Monad1 (m : (t -> Type) -> t -> Type) where
   pure1 : f a -> m f a
   (>>>=) : m f a -> ({b : t} -> f b -> m g b) -> m g a  
 
--- Functors  
-
--- product functor
-data ProdF : (f : a -> b) -> (g : a -> b) -> (x : a) -> Type where
-  MkProdF : f a -> g a -> ProdF f g a
-
--- functor composition
-data CompF : (f : b -> c) -> (g : a -> b) -> (x : a) -> Type where
-  MkCompF : f (g a) -> CompF f g a
-
-(Functor f, Succ1 g) => Succ1 (CompF f g) where
-  succ1 (MkCompF x) = MkCompF (map succ1 x)
 
 -- Box
 
