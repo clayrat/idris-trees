@@ -2,6 +2,7 @@ package trees
 
 sourcedir = src
 
-modules = Main
+modules = Functor
+        , Main
 
-opts = "-p contrib"
+opts = "-p contrib -p bi"

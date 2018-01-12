@@ -8,3 +8,4 @@ Some tree algorithms in Idris.
 * [Agda by Example: Sorting](https://mazzo.li/posts/AgdaSort.html)
 * [Dependently typed DAGs](https://www.twanvl.nl/blog/haskell/dependently-typed-dags)
 * [Numbers, Vectors, Trees](https://github.com/conal/numbers-vectors-trees)
+* [Appel, "Number Representations and Efficient Lookup Tables"](https://softwarefoundations.cis.upenn.edu/current/vfa-current/Trie.html)
