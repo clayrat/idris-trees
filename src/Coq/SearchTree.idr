@@ -70,8 +70,9 @@ insertSTPIn {k} (ST_T {k=k1} x y) ltelo ltehi with (compare k k1) proof cmp
                                             Refl) ltehi)
 
 insertSTPOut : SearchTreeProp lo t hi -> LTE hi k -> SearchTreeProp lo (insert k v t) (S hi + k)
-insertSTPOut {hi} {k} (ST_E x) lte = ST_T (ST_E $ lteTransitive x lte) (ST_E $ LTESucc $ rewrite plusCommutative hi k in lteAddRight k) 
-insertSTPOut {k} (ST_T {k=k1} x y) lte = 
+insertSTPOut {hi} {k} (ST_E x)          lte = 
+  ST_T (ST_E $ lteTransitive x lte) (ST_E $ LTESucc $ rewrite plusCommutative hi k in lteAddRight k) 
+insertSTPOut      {k} (ST_T {k=k1} x y) lte = 
   rewrite cmpOp k k1 in 
   rewrite ltCmp k1 k (lteTransitive (SearchTreePropLTE y) lte) in  
   ST_T x (insertSTPOut {k} y lte)
