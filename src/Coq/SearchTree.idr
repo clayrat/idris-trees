@@ -55,14 +55,14 @@ emptyTreeSearchTree = ST_intro $ ST_E {hi=Z} LTEZero
 insertSTPIn : SearchTreeProp lo t hi -> LTE lo k -> LTE (S k) hi -> SearchTreeProp lo (insert k v t) hi
 insertSTPIn     (ST_E x)          ltelo ltehi = ST_T (ST_E ltelo) (ST_E ltehi)
 insertSTPIn {k} (ST_T {k=k1} x y) ltelo ltehi with (compare k k1) proof cmp
-  insertSTPIn {k} (ST_T {k=k1} x y) ltelo ltehi | LT =
+  insertSTPIn {k} (ST_T {k=k1} x y) ltelo _     | LT =
     ST_T (insertSTPIn {k} x ltelo $ cmpLt k k1 $ sym cmp) y
-  insertSTPIn {k} (ST_T {k=k1} x y) ltelo ltehi | EQ = 
+  insertSTPIn {k} (ST_T {k=k1} x y) _     _     | EQ = 
     rewrite cmpOp k1 k in
     rewrite sym cmp in
     rewrite cmpEq k k1 (sym cmp) in
     ST_T x y
-  insertSTPIn {k} (ST_T {k=k1} x y) ltelo ltehi | GT = 
+  insertSTPIn {k} (ST_T {k=k1} x y) _     ltehi | GT = 
     rewrite cmpOp k1 k in
     rewrite sym cmp in
     ST_T x (insertSTPIn {k} y (cmpLt k1 k $ rewrite cmpOp k1 k in
@@ -71,7 +71,8 @@ insertSTPIn {k} (ST_T {k=k1} x y) ltelo ltehi with (compare k k1) proof cmp
 
 insertSTPOut : SearchTreeProp lo t hi -> LTE hi k -> SearchTreeProp lo (insert k v t) (S hi + k)
 insertSTPOut {hi} {k} (ST_E x)          lte = 
-  ST_T (ST_E $ lteTransitive x lte) (ST_E $ LTESucc $ rewrite plusCommutative hi k in lteAddRight k) 
+  ST_T (ST_E $ lteTransitive x lte) (ST_E $ LTESucc $ rewrite plusCommutative hi k in 
+                                                      lteAddRight k) 
 insertSTPOut      {k} (ST_T {k=k1} x y) lte = 
   rewrite cmpOp k k1 in 
   rewrite ltCmp k1 k (lteTransitive (SearchTreePropLTE y) lte) in  
@@ -79,5 +80,5 @@ insertSTPOut      {k} (ST_T {k=k1} x y) lte =
 
 insertSearchTree : SearchTree t -> SearchTree (insert k v t)
 insertSearchTree {k} (ST_intro {hi} prf) = case cmpTotal k hi of 
-  Left khi => ST_intro $ insertSTPIn prf LTEZero khi
+  Left  khi => ST_intro $ insertSTPIn prf LTEZero khi
   Right hik => ST_intro $ insertSTPOut prf hik

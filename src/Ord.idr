@@ -52,10 +52,10 @@ cmpTotal (S a) (S b) = case cmpTotal a b of
   Right r => Right $ LTESucc r
 
 cmpLt : (a, b : Nat) -> compare a b = LT -> LTE (S a) b
-cmpLt  Z     Z    prf = absurd prf
+cmpLt  Z     Z    prf  = absurd prf
 cmpLt  Z    (S _) Refl = LTESucc LTEZero
-cmpLt (S _)  Z    prf = absurd prf
-cmpLt (S a) (S b) prf = LTESucc $ cmpLt a b prf
+cmpLt (S _)  Z    prf  = absurd prf
+cmpLt (S a) (S b) prf  = LTESucc $ cmpLt a b prf
 
 ltCmp : (a, b : Nat) -> LTE (S a) b -> compare a b = LT
 ltCmp  Z     Z    prf               = absurd prf
