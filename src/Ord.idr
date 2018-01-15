@@ -31,20 +31,34 @@ Uninhabited (EQ = GT) where
 
 -- Nat reflection  
 
-cmpLemma : (a, b : Nat) -> compare a b = compareOp (compare b a)
-cmpLemma  Z     Z    = Refl
-cmpLemma  Z    (S _) = Refl
-cmpLemma (S _)  Z    = Refl
-cmpLemma (S a) (S b) = cmpLemma a b 
+cmpOp : (a, b : Nat) -> compare a b = compareOp (compare b a)
+cmpOp  Z     Z    = Refl
+cmpOp  Z    (S _) = Refl
+cmpOp (S _)  Z    = Refl
+cmpOp (S a) (S b) = cmpOp a b 
 
-cmpEqLemma : (a, b : Nat) -> compare a b = EQ -> a = b
-cmpEqLemma  Z     Z    Refl = Refl
-cmpEqLemma  Z    (S _) prf = absurd prf
-cmpEqLemma (S _)  Z    prf = absurd prf
-cmpEqLemma (S a) (S b) prf = cong $ cmpEqLemma a b prf
+cmpEq : (a, b : Nat) -> compare a b = EQ -> a = b
+cmpEq  Z     Z    Refl = Refl
+cmpEq  Z    (S _) prf  = absurd prf
+cmpEq (S _)  Z    prf  = absurd prf
+cmpEq (S a) (S b) prf  = cong $ cmpEq a b prf
 
-cmpLtLemma : (a, b : Nat) -> compare a b = LT -> LTE (S a) b
-cmpLtLemma   Z     Z    prf = absurd prf
-cmpLtLemma   Z    (S _) Refl = LTESucc LTEZero
-cmpLtLemma  (S _)  Z    prf = absurd prf
-cmpLtLemma  (S a) (S b) prf = LTESucc $ cmpLtLemma a b prf
+cmpTotal : (a, b : Nat) -> Either (LTE (S a) b) (LTE b a)
+cmpTotal  Z     Z    = Right LTEZero
+cmpTotal  Z    (S _) = Left $ LTESucc LTEZero
+cmpTotal (S _)  Z    = Right LTEZero
+cmpTotal (S a) (S b) = case cmpTotal a b of 
+  Left l => Left $ LTESucc l
+  Right r => Right $ LTESucc r
+
+cmpLt : (a, b : Nat) -> compare a b = LT -> LTE (S a) b
+cmpLt  Z     Z    prf = absurd prf
+cmpLt  Z    (S _) Refl = LTESucc LTEZero
+cmpLt (S _)  Z    prf = absurd prf
+cmpLt (S a) (S b) prf = LTESucc $ cmpLt a b prf
+
+ltCmp : (a, b : Nat) -> LTE (S a) b -> compare a b = LT
+ltCmp  Z     Z    prf               = absurd prf
+ltCmp  Z    (S _) (LTESucc LTEZero) = Refl
+ltCmp (S _)  Z    prf               = absurd prf
+ltCmp (S a) (S b) (LTESucc prf)     = ltCmp a b prf
