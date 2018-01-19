@@ -12,6 +12,9 @@ data Tree : Type where
   Leaf : Tree
   Node : Nat -> Tree -> Tree -> Tree
 
+Uninhabited (Node _ _ _ = Leaf) where
+  uninhabited Refl impossible
+
 PriQueue : Type
 PriQueue = List Tree
 
@@ -34,23 +37,23 @@ carry (u    :: q) t@(Node _ _ _) = Leaf :: carry q (smash t u)
 insert : (x : Nat) -> (q : PriQueue) -> PriQueue
 insert x q = carry q (Node x Leaf Leaf)
 
---testQ : foldl (\x,q => insert q x) Binom.empty (the (List Nat) [3,1,4,1,5,9,2,3,5])
---      = [ Node 5 Leaf Leaf
---        , Leaf
---        , Leaf
---        , Node 9 (Node 4 (Node 3 (Node 1 Leaf Leaf) (Node 1 Leaf Leaf)) (Node 3 (Node 2 Leaf Leaf) (Node 5 Leaf Leaf))) Leaf
---        ]
---testQ = Refl
+testQ : foldl (\x,q => insert q x) Binom.empty (the (List Nat) [3,1,4,1,5,9,2,3,5])
+      = [ Node 5 Leaf Leaf
+        , Leaf
+        , Leaf
+        , Node 9 (Node 4 (Node 3 (Node 1 Leaf Leaf) (Node 1 Leaf Leaf)) (Node 3 (Node 2 Leaf Leaf) (Node 5 Leaf Leaf))) Leaf
+        ]
+testQ = Refl
 
 join : (p, q : PriQueue) -> (c : Tree) -> PriQueue
-join []          q           c              = carry q c
-join p            []         c              = carry p c
-join (Leaf :: p) (Leaf :: q) c              = c    :: join p q Leaf
-join (Leaf :: p) (q1   :: q)    Leaf        = q1   :: join p q Leaf
-join (Leaf :: p) (q1   :: q) c@(Node _ _ _) = Leaf :: join p q (smash c q1)
-join (p1   :: p) (Leaf :: q)    Leaf        = p1   :: join p q Leaf
-join (p1   :: p) (Leaf :: q) c@(Node _ _ _) = Leaf :: join p q (smash c p1)
-join (p1   :: p) (q1   :: q) c              = c    :: join p q (smash p1 q1)
+join  []                     q                     c              = carry q c
+join  p                      []                    c              = carry p c
+join (    Leaf        :: p) (    Leaf        :: q) c              = c    :: join p q Leaf
+join (    Leaf        :: p) (q1@(Node _ _ _) :: q)    Leaf        = q1   :: join p q Leaf
+join (    Leaf        :: p) (q1@(Node _ _ _) :: q) c@(Node _ _ _) = Leaf :: join p q (smash c q1)
+join (p1@(Node _ _ _) :: p) (    Leaf        :: q)    Leaf        = p1   :: join p q Leaf
+join (p1@(Node _ _ _) :: p) (    Leaf        :: q) c@(Node _ _ _) = Leaf :: join p q (smash c p1)
+join (p1@(Node _ _ _) :: p) (q1@(Node _ _ _) :: q) c              = c    :: join p q (smash p1 q1)
 
 merge : (p, q : PriQueue) -> PriQueue
 merge p q = join p q Leaf
@@ -151,13 +154,38 @@ carryValid _ (    Leaf        ::  _) (Right pht,  _)    (Node _ _ _) (Right _ ) 
 carryValid n (ht@(Node _ _ _) :: tt) (Right pht, pq1) t@(Node _ _ _) (Right pt) = 
   (Left Refl, carryValid (S n) tt pq1 (smash t ht) (Right $ smashValid n t ht pt pht))
 
--- TODO
-
 insertPriq : (x : Nat) -> (q : PriQueue) -> priq q -> priq (insert x q)
+insertPriq x q prf = carryValid Z q prf (Node x Leaf Leaf) (Right ())
 
--- This proof is rather long, but each step is reasonably straightforward. There's just one induction to do, right at the beginning.
-
+-- TODO individual pieces seem legit but type checker takes forever for the whole (probably to build the coverage tree)
 joinValid : (p, q : PriQueue) -> (c : Tree) -> (n : Nat) -> priq1 n p -> priq1 n q -> Either (c=Leaf) (pow2heap n c) -> priq1 n (join p q c)
+{-
+joinValid   []                      q                       c              n ()                pq1q              e          = carryValid n q pq1q c e
+joinValid p@(    _           ::  _) []                      c              n pq1p              ()                e          = carryValid n p pq1p c e
+joinValid   _                        _                         Leaf        _ _                 _                 (Right cr) = absurd cr
+joinValid   (    _           :: tp) (    _           :: tq) _              n (Left  lp, pq1tp) (Left  lq, pq1tq) e          = 
+  rewrite lp in 
+  rewrite lq in 
+  (e, joinValid tp tq Leaf (S n) pq1tp pq1tq (Left Refl))
+joinValid   _                       (    Leaf        ::  _) _              _ _                 (Right rq,     _) _          = absurd rq
+joinValid   (    _           :: tp) (    Node _ _ _  :: tq) c              n (Left  lp, pq1tp) (Right rq, pq1tq) (Left  cl) = 
+  rewrite lp in
+  rewrite cl in
+  (Right rq, joinValid tp tq Leaf (S n) pq1tp pq1tq (Left Refl))
+joinValid   (    _           :: tp) (hq@(Node _ _ _) :: tq) c@(Node _ _ _) n (Left  lp, pq1tp) (Right rq, pq1tq) (Right cr) = 
+  rewrite lp in
+  (Left Refl, joinValid tp tq (smash c hq) (S n) pq1tp pq1tq (Right $ smashValid n c hq cr rq))
+joinValid   (    Leaf        ::  _) _                       _              _ (Right rp, _)     _                 _          = absurd rp
+joinValid   (    Node _ _ _  :: tp) (_               :: tq)  _             n (Right rp, pq1tp) (Left  lq, pq1tq) (Left cl)  = 
+  rewrite lq in 
+  rewrite cl in 
+  (Right rp, joinValid tp tq Leaf (S n) pq1tp pq1tq (Left Refl))
+joinValid   (hp@(Node _ _ _) :: tp) (_               :: tq) c@(Node _ _ _) n (Right rp, pq1tp) (Left  lq, pq1tq) (Right cr) = 
+  rewrite lq in 
+  (Left Refl, joinValid tp tq (smash c hp) (S n) pq1tp pq1tq (Right $ smashValid n c hp cr rp))
+joinValid   (hp@(Node _ _ _) :: tp) (hq@(Node _ _ _) :: tq) c              n (Right rp, pq1tp) (Right rq, pq1tq) e          = 
+  (e, joinValid tp tq (smash hp hq) (S n) pq1tp pq1tq (Right $ smashValid n hp hq rp rq))
+-}
 
 deleteMaxJustPriq : (p, q : PriQueue) -> (k : Nat) -> priq p -> deleteMax p = Just (k, q) -> priq q
 
