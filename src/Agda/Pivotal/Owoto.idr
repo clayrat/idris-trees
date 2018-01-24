@@ -43,8 +43,8 @@ infixr 4 *.
 infixr 3 +.
 infixr 2 ->.
 
--- (+.) : {t : Type} -> (t -> Type) -> (t -> Type) -> (t -> Type)
--- (+.) S T i = Either (S i) (T i)
+(+.) : {t : Type} -> (t -> Type) -> (t -> Type) -> (t -> Type)
+(+.) S T i = Either (S i) (T i)
 
 (*.) : {t : Type} -> (t -> Type) -> (t -> Type) -> (t -> Type)
 (*.) S T i = (S i, T i)
