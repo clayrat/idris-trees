@@ -8,10 +8,10 @@ data TopBot : Type -> Type where
   Box : (x : t) -> TopBot t
 
 Rel : Type -> Type
-Rel X = (X, X) -> Type
+Rel t = (t, t) -> Type
 
 OWOTO : Rel t -> Rel t
-OWOTO L (x,y) = Either (L (x,y)) (L (y,x))
+OWOTO l (x,y) = Either (l (x,y)) (l (y,x))
 
 LEaux : Nat -> Nat -> Type
 LEaux  Z     _    = ()
@@ -28,7 +28,7 @@ owotoN (S x) (S y) = owotoN x y
 
 BRel : Rel t -> Rel (TopBot t)
 BRel _ (_    , Top  ) = ()
-BRel L (Box x, Box y) = L (x, y)
+BRel l (Box x, Box y) = l (x, y)
 BRel _ (Bot  , _    ) = ()
 BRel _ (_    , _    ) = Void
 
@@ -43,23 +43,23 @@ infixr 4 *.
 infixr 3 +.
 infixr 2 ->.
 
-(+.) : {t : Type} -> (t -> Type) -> (t -> Type) -> (t -> Type)
-(+.) S T i = Either (S i) (T i)
+(+.) : {x : Type} -> (x -> Type) -> (x -> Type) -> (x -> Type)
+(+.) s t i = Either (s i) (t i)
 
-(*.) : {t : Type} -> (t -> Type) -> (t -> Type) -> (t -> Type)
-(*.) S T i = (S i, T i)
+(*.) : {x : Type} -> (x -> Type) -> (x -> Type) -> (x -> Type)
+(*.) s t i = (s i, t i)
 
-(->.) : {t : Type} -> (t -> Type) -> (t -> Type) -> (t -> Type)
-(->.) S T i = S i -> T i
+(->.) : {x : Type} -> (x -> Type) -> (x -> Type) -> (x -> Type)
+(->.) s t i = s i -> t i
 
-Bd : {I : Type} -> (I -> Type) -> Type
-Bd {I} F = {i : I} -> F i
+Bd : {x : Type} -> (x -> Type) -> Type
+Bd {x} f = {i : x} -> f i
 
-(/\.) : Rel (TopBot t) -> Rel (TopBot t) -> Rel (TopBot t)
-(/\.) {t} S T lu = (p : t ** (S (fst lu, Box p), T (Box p, snd lu)))
+(/\.) : Rel (TopBot x) -> Rel (TopBot x) -> Rel (TopBot x)
+(/\.) {x} s t lu = (p : x ** (s (fst lu, Box p), t (Box p, snd lu)))
 
 It : Rel t -> Rel (TopBot t)
-It L = BRel L /\. BRel L
+It l = BRel l /\. BRel l
 
 owoto : {r : Rel t} -> (x, y : t) -> OWOTO r (x,y)
 
@@ -69,7 +69,7 @@ owoto : {r : Rel t} -> (x, y : t) -> OWOTO r (x,y)
 --   BLeaf : BST lu    
 --   BNode : ((BRel l *. BST) /\. (BRel l *. BST)) lu -> BST lu
 --   
---   -- lp doesn't want to fit  
+--   -- lp doesn't want to fit, probably because of indexed stuff  
 -- insert : Bd (It l ->. BST ->. BST)
 -- insert (y**yb)  BLeaf                         = BNode (y ** ((fst yb, BLeaf), (snd yb, BLeaf)))
 -- insert {l} (y**yb) (BNode (p**((pl,lt),(pr,rt)))) with (owoto {r=l} y p)
