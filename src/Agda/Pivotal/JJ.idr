@@ -90,7 +90,7 @@ using implementation cnstFun
     (<*>) = (<+>)
 
 crush : Monoid x => (p -> x) -> MuJJ f p -> x
-crush {x} = JJ.traverse {b=x} @{monApp}
+crush {x} = traverse {b=x} @{monApp}
 
 [compSemi] Semigroup (x -> x) where
   (<+>) = (.)
@@ -168,9 +168,40 @@ interface DecRel (t : Type) (l : Rel t) | l where
   decRel : (x, y : t) -> Either (l (x,y)) (l (y,x))
 
 insert : DecRel t l => MuInterval l i -> MuTree l i -> MuTree l i
-insert (MkMuSOlte (y ** (yl,yr))) (MkMuSOlte (Left _)) = MkMuSOlte $ Right (y ** (MkMuSOlte $ Left yl, MkMuSOlte $ Left yr))
+insert           (MkMuSOlte (y ** (yl,yr))) (MkMuSOlte (Left _)) = MkMuSOlte $ Right (y ** (MkMuSOlte $ Left yl, MkMuSOlte $ Left yr))
 insert @{dr} {i} (MkMuSOlte (y ** (yl,yr))) (MkMuSOlte (Right (p ** (pl,pr)))) with (decRel @{dr} y p)
   insert {i} (MkMuSOlte (y ** (yl,yr))) (MkMuSOlte (Right (p ** (lt,rt)))) | Left  le = 
     MkMuSOlte $ Right (p ** (insert {i=(fst i, Box p)} (MkMuSOlte (y ** (yl, le))) lt, rt))
   insert {i} (MkMuSOlte (y ** (yl,yr))) (MkMuSOlte (Right (p ** (lt,rt)))) | Right ge = 
     MkMuSOlte $ Right (p ** (lt, insert {i=(Box p, snd i)} (MkMuSOlte (y ** (ge, yr))) rt))
+
+makeTree : DecRel t l => MuJJ f t -> MuTree l (Bot, Top)
+makeTree = foldr (\p => insert (MkMuSOlte (p ** ((), ())))) (MkMuSOlte $ Left ())
+
+MuList : Rel t -> Rel (TopBot t)
+MuList = MuSOlte SOList
+
+-- seems Idris doesn't have a problem with termination here, and splitting recursion actually gets us into trouble with implicit passing
+merge : DecRel t l => MuList l i -> MuList l i -> MuList l i
+merge (MkMuSOlte (Left _)) ys = ys
+merge xs (MkMuSOlte (Left _)) = xs
+merge @{dr} (MkMuSOlte (Right (x ** (lx, xs)))) (MkMuSOlte (Right (y ** (ly, ys)))) with (decRel @{dr} x y)
+  merge (MkMuSOlte (Right (x ** (lx, xs)))) (MkMuSOlte (Right (y ** (ly, ys)))) | Left le = 
+    MkMuSOlte $ Right (x ** (lx, merge xs (MkMuSOlte (Right (y ** (le, ys))))))
+  merge (MkMuSOlte (Right (x ** (lx, xs)))) (MkMuSOlte (Right (y ** (ly, ys)))) | Right ge = 
+    MkMuSOlte $ Right (y ** (ly, merge (MkMuSOlte (Right (x ** (ge, xs)))) ys))
+
+DecRel t l => Semigroup (MuList l lu) where
+  (<+>) = merge
+
+interface BRelProv (l : Rel t) (lu : (TopBot t, TopBot t)) where
+  provide : BRel l lu 
+
+[olMon] (DecRel t l, BRelProv l lu) => Monoid (MuList l lu) where
+  neutral {l} {lu} = MkMuSOlte $ Left $ provide {l} {lu}
+
+BRelProv l (Bot, Top) where
+  provide = ()
+
+mergeJJ : DecRel p l => MuJJ f p -> MuList l (Bot, Top)  
+mergeJJ = crush @{olMon} (\p => MkMuSOlte $ Right (p ** ((), MkMuSOlte $ Left ())))
