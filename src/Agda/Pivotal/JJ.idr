@@ -205,3 +205,14 @@ BRelProv l (Bot, Top) where
 
 mergeJJ : DecRel p l => MuJJ f p -> MuList l (Bot, Top)  
 mergeJJ = crush @{olMon} (\p => MkMuSOlte $ Right (p ** ((), MkMuSOlte $ Left ())))
+
+QLTree : JJ
+QLTree = (U `Pl` P) `Pl` (R `Ti` R)
+
+twistIn : p -> MuJJ QLTree p -> MuJJ QLTree p
+twistIn p (MkMuJJ (Left (Left ()))) = MkMuJJ $ Left $ Right p
+twistIn p (MkMuJJ (Left (Right q))) = MkMuJJ $ Right (MkMuJJ $ Left $ Right p, MkMuJJ $ Left $ Right q)
+twistIn p (MkMuJJ (Right (l, r))) = MkMuJJ $ Right (twistIn p r, l)
+
+mergeSort : DecRel p l => MuJJ f p -> MuList l (Bot, Top)  
+mergeSort = mergeJJ . foldr twistIn (MkMuJJ (Left (Left ())))
