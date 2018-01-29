@@ -23,6 +23,9 @@ bigEndianToZ {b} = foldl (\s, x => finToInteger x + ib * s) 0
 
 data TrieU : Type -> Type where
   U : TrieU ()
+  B : TrieU Bool
+  M : TrieU a -> TrieU (Maybe a)
+  N : TrieU Nat
   F : (n : Nat) -> TrieU (Fin n)
   E : TrieU a -> TrieU b -> TrieU (Either a b)
   P : TrieU a -> TrieU b -> TrieU (a, b)
@@ -30,6 +33,9 @@ data TrieU : Type -> Type where
 
 Trie : TrieU _ -> Type -> Type
 Trie  U      = Id
+Trie  B      = \a => (a,a)
+Trie (M a)   = \b => (b, Trie a b)
+Trie  N      = Stream
 Trie (F n)   = Vect n
 Trie (E a b) = ProdF (Trie a) (Trie b)
 Trie (P a b) = CompF (Trie a) (Trie b)
@@ -37,6 +43,9 @@ Trie (V a n) = CompRF (Trie a) n
 
 trie : (u : TrieU x) -> (x -> y) -> Trie u y
 trie  U          f = MkId (f ())
+trie  B          f = (f False, f True)
+trie (M n)       f = (f Nothing, trie n (f . Just))
+trie  N          f = f <$> [0..]
 trie (F m)       f with (sizeAccessible m)
   trie (F Z)     f | _ = []
   trie (F (S k)) f | Access acc = f FZ :: trie (F k) (f . FS) | acc k lteRefl
@@ -48,6 +57,11 @@ trie (V n m)     f with (sizeAccessible m)
 
 untrie : (u : TrieU x) -> Trie u y -> (x -> y)
 untrie  U        (MkId a)       ()       = a
+untrie  B        (x,_)          True     = x
+untrie  B        (_,y)          False    = y
+untrie (M _)     (x,_)          Nothing  = x
+untrie (M n)     (_,t)         (Just m)  = untrie n t m
+untrie  N        s              n        = index n s
 untrie (F (S _)) (x :: _)       FZ       = x
 untrie (F (S k)) (_ :: xs)     (FS s)    = untrie (F k) xs s
 untrie (E n m)   (MkProdF a b) (Left x)  = untrie n a x 
@@ -88,3 +102,23 @@ test = CRFS $ MkCompF [ CRFS $ MkCompF [ CRFS $ MkCompF [ CRFZ 1
                                                         ]
                                        ]
                       ]
+                      
+-- needs more laziness somewhere                      
+fix : (a -> a) -> a
+fix f = assert_total x
+  where
+    x = f x
+
+memoFix : .{u : TrieU a} -> ((a -> b) -> (a -> b)) -> (a -> b)
+memoFix {u} h = fix (\a => memo {u} (h a))    
+
+fibF : (Nat -> Nat) -> (Nat -> Nat)
+fibF _ Z = Z
+fibF _ (S Z) = S Z
+fibF f (S (S n)) = f (S n) + f n
+
+fibx : Nat -> Nat
+fibx = fix fibF
+
+fibm : Nat -> Nat
+fibm = memoFix {u=N} fibF
