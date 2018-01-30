@@ -18,9 +18,6 @@ BRel l (Box x, Box y) = l (x, y)
 BRel _ (Bot  , _    ) = ()
 BRel _ (_    , _    ) = Void
 
--- TODO figure out how to use indexed stuff from idris-tparsec
--- we get problems later in insert
-{-
 infixr 5 /\.
 infixr 4 *.
 infixr 3 +.
@@ -40,7 +37,6 @@ Bd {x} f = {i : x} -> f i
 
 (/\.) : Rel (TopBot x) -> Rel (TopBot x) -> Rel (TopBot x)
 (/\.) {x} s t lu = (p : x ** (s (fst lu, Box p), t (Box p, snd lu)))
--}
 
 data JJ : Type where
   R : JJ               -- recursive substructure
@@ -136,6 +132,8 @@ tree {f} (MkMuJJ t) = go f t
   go (Plo _  tt) (Right t) = go tt t
   go (Pvo st tt) (s, p, t) = MkMuJJ $ Right (go st s, p, go tt t)
 
+-- TODO figure out how to use indexed stuff from idris-tparsec
+-- we get problems later in insert
 IntSOlte : SO -> Rel (TopBot x) -> Rel x -> Rel (TopBot x)
 IntSOlte  Ro       r _ i = r i
 IntSOlte  Uo       _ l i = BRel l i
@@ -153,11 +151,11 @@ MuTree = MuSOlte SOTree
 MuInterval : Rel t -> Rel (TopBot t)
 MuInterval = MuSOlte SOInterval
 
-tree1 : {lt : Rel pt} -> MuSOlte ft lt lu1 -> MuTree lt lu1
-tree1 {lu1} {ft} {lt} {pt} (MkMuSOlte t) = go {lu=lu1} ft t 
+treeLte : {lt : Rel pt} -> MuSOlte ft lt lu1 -> MuTree lt lu1
+treeLte {lu1} {ft} {lt} {pt} (MkMuSOlte t) = go {lu=lu1} ft t 
   where
   go : {lu : (TopBot pt, TopBot pt)} -> (g : SO) -> (IntSOlte g) (MuSOlte ft lt) lt lu -> MuTree lt lu
-  go       Ro        f           = tree1 f
+  go       Ro        f           = treeLte f
   go       Uo        x           = MkMuSOlte $ Left x
   go      (Plo s _) (Left l)     = go s l
   go      (Plo _ t) (Right r)    = go t r
@@ -216,3 +214,18 @@ twistIn p (MkMuJJ (Right (l, r))) = MkMuJJ $ Right (twistIn p r, l)
 
 mergeSort : DecRel p l => MuJJ f p -> MuList l (Bot, Top)  
 mergeSort = mergeJJ . foldr twistIn (MkMuJJ (Left (Left ())))
+
+-- concat : MuList l (x,y) -> MuList l (y,z) -> MuList l (x,z)
+-- concat (MkMuSOlte (Left   t))              ys = ?wat
+-- concat (MkMuSOlte (Right (x ** (xl, xs)))) ys = MkMuSOlte (Right (x ** (xl, concat xs ys)))
+
+sandwich : (MuList l /\. MuList l) i -> MuList l i
+sandwich (p ** (MkMuSOlte (Left t), ys)) = MkMuSOlte (Right (p ** (t,ys)))
+sandwich (p ** (MkMuSOlte (Right (x ** (xl, xs))), ys)) = MkMuSOlte (Right (x ** (xl, assert_total $ sandwich (p ** (xs, ys)))))
+
+flatten : MuTree l i -> MuList l i
+flatten (MkMuSOlte $ Left x) = MkMuSOlte $ Left x
+flatten (MkMuSOlte $ Right (p ** (l, r))) = sandwich (p ** (flatten l, flatten r))
+
+flattenSOlte : MuSOlte f l i -> MuList l i
+flattenSOlte = flatten . treeLte
