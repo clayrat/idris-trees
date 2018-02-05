@@ -234,6 +234,9 @@ flattenSOlte : MuSOlte f l i -> MuList l i
 flattenSOlte = flatten . treeLte
 -}
 
+{-
+-- COMPLICATED 
+
 flapp : {l : Rel p} -> (g : SO) -> (((IntSOlte g) (MuSOlte ft l) l) /\. MuList l) lu -> MuList l lu
 flapp {ft}  Ro       (p ** (MkMuSOlte x,ys))     = assert_total $ flapp ft (p ** (x, ys))
 flapp       Uo       (p ** (t, ys))              = MkMuSOlte (Right (p ** (t, ys)))
@@ -250,3 +253,24 @@ flatten {f} (MkMuSOlte t) = go f t
   go (Plo s _) (Left l)      = go s l
   go (Plo _ t) (Right r)     = go t r
   go (Pvo s t) (p ** (l, r)) = flapp s (p ** (l, go t r))
+-}  
+
+RepL : Rel p -> Rel (TopBot p)
+RepL {p} l (n, u) = {m : TopBot p} -> BRel l (m,n) -> MuList l (m, u)
+
+concat : MuList ll (l, n) -> RepL ll (n, u) -> MuList ll (l, u)
+concat (MkMuSOlte (Left l)) ys = ys l
+concat (MkMuSOlte (Right (x ** (l, xs)))) ys =  MkMuSOlte (Right (x ** (l, concat xs ys)))
+
+flapp : MuSOlte f ll (l,n) -> RepL ll (n,u) -> MuList ll (l, u)
+flapp t ys = go Ro t ys
+  where
+  go : (g : SO) -> (IntSOlte g) (MuSOlte ft ll) ll (l,n) -> RepL ll (n,u) -> MuList ll (l,u)
+  go  Ro       (MkMuSOlte t) ys = go ft t ys
+  go  Uo        z            ys = ys z
+  go (Plo s _) (Left l)      ys = go s l ys
+  go (Plo _ t) (Right r)     ys = go t r ys
+  go (Pvo s t) (p ** (l, r)) ys = go s l (\z => MkMuSOlte $ Right (p ** (z, go t r ys)))
+
+flatten : MuSOlte f ll (l, u) -> MuList ll (l, u)
+flatten t = flapp t (MkMuSOlte . Left)
