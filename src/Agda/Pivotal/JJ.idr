@@ -215,6 +215,9 @@ twistIn p (MkMuJJ (Right (l, r))) = MkMuJJ $ Right (twistIn p r, l)
 mergeSort : DecRel p l => MuJJ f p -> MuList l (Bot, Top)  
 mergeSort = mergeJJ . foldr twistIn (MkMuJJ (Left (Left ())))
 
+{-
+-- NAIVE 
+
 -- concat : MuList l (x,y) -> MuList l (y,z) -> MuList l (x,z)
 -- concat (MkMuSOlte (Left   t))              ys = ?wat
 -- concat (MkMuSOlte (Right (x ** (xl, xs)))) ys = MkMuSOlte (Right (x ** (xl, concat xs ys)))
@@ -229,3 +232,21 @@ flatten (MkMuSOlte $ Right (p ** (l, r))) = sandwich (p ** (flatten l, flatten r
 
 flattenSOlte : MuSOlte f l i -> MuList l i
 flattenSOlte = flatten . treeLte
+-}
+
+flapp : {l : Rel p} -> (g : SO) -> (((IntSOlte g) (MuSOlte ft l) l) /\. MuList l) lu -> MuList l lu
+flapp {ft}  Ro       (p ** (MkMuSOlte x,ys))     = assert_total $ flapp ft (p ** (x, ys))
+flapp       Uo       (p ** (t, ys))              = MkMuSOlte (Right (p ** (t, ys)))
+flapp      (Plo s _) (p ** (Left l, ys))         = flapp s (p ** (l, ys))
+flapp      (Plo _ t) (p ** (Right r, ys))        = flapp t (p ** (r, ys))
+flapp      (Pvo s t) (p ** ((p1 ** (l, r)), ys)) = flapp s (p1 ** (l, flapp t (p ** (r, ys))))
+
+flatten : MuSOlte f l i -> MuList l i
+flatten {f} (MkMuSOlte t) = go f t
+  where
+  go : (g : SO) -> (IntSOlte g) (MuSOlte ft l) l lu -> MuList l lu
+  go  Ro        t            = flatten t
+  go  Uo        t            = MkMuSOlte (Left t)
+  go (Plo s _) (Left l)      = go s l
+  go (Plo _ t) (Right r)     = go t r
+  go (Pvo s t) (p ** (l, r)) = flapp s (p ** (l, go t r))
