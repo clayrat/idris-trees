@@ -116,3 +116,23 @@ insert23 p (h ** tr) with (ins23 h (MkMuIOlte (p ** ((), ()))) tr)
 
 sort : DecRel p l => MuJJ f p -> MuIOList l (Bot, Top)
 sort mu = flattenIO $ snd $ JJ.foldr insert23 (Z ** MkMuIOlte ()) mu
+
+-- deletion
+
+interface TransRel (t : Type) (l : Rel t) | l where
+  transrel : {x, z : t} -> (y : t) -> l (x,y) -> l (y,z) -> l (x,z)
+
+btrans : TransRel t l => (BRel l /\. BRel l) lu -> BRel l lu
+btrans {lu=(_    , Top  )}  _           = ()
+btrans {lu=(Bot  , Bot  )}  _           = ()
+btrans {lu=(Bot  , Box _)}  _           = ()
+btrans {lu=(Top  , _    )} (_ ** (s,_)) = absurd s
+btrans {lu=(Box _, Box _)} (p ** (s,t)) = transrel p s t
+btrans {lu=(Box _, Bot  )} (_ ** (_,t)) = absurd t
+
+Short23 : Nat -> Rel (TopBot p)
+Short23      Z    _  = Void
+Short23 {p} (S k) lu = {l : Rel p} -> Mu23 l k lu
+
+Del23 : Nat -> Rel (TopBot p)
+Del23 {p} h lu = Either (Short23 h lu) ({l : Rel p} -> Mu23 l h lu)
