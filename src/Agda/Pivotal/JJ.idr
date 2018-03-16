@@ -3,6 +3,7 @@ module Agda.Pivotal.JJ
 import Data.So
 
 %default total
+%access public export
 
 data TopBot : Type -> Type where
   Top : TopBot t
@@ -154,13 +155,12 @@ MuInterval = MuSOlte SOInterval
 treeLte : {lt : Rel pt} -> MuSOlte ft lt lu1 -> MuTree lt lu1
 treeLte {lu1} {ft} {lt} {pt} (MkMuSOlte t) = go {lu=lu1} ft t 
   where
-  go : {lu : (TopBot pt, TopBot pt)} -> (g : SO) -> (IntSOlte g) (MuSOlte ft lt) lt lu -> MuTree lt lu
+  go : {lu : (TopBot pt, TopBot pt)} -> (g : SO) -> IntSOlte g (MuSOlte ft lt) lt lu -> MuTree lt lu
   go       Ro        f           = treeLte f
   go       Uo        x           = MkMuSOlte $ Left x
   go      (Plo s _) (Left l)     = go s l
   go      (Plo _ t) (Right r)    = go t r
-  go {lu} (Pvo s t) (p ** (l,r)) = MkMuSOlte $ Right (p ** ( go {lu = (fst lu, Box p)} s l
-                                                           , go {lu = (Box p, snd lu)} t r))
+  go {lu} (Pvo s t) (p ** (l,r)) = MkMuSOlte $ Right (p ** (go s l, go t r))
 
 interface DecRel (t : Type) (l : Rel t) | l where
   decRel : (x, y : t) -> Either (l (x,y)) (l (y,x))
