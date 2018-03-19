@@ -135,59 +135,59 @@ tree {f} (MkMuJJ t) = go f t
 
 -- TODO figure out how to use indexed stuff from idris-tparsec
 -- we get problems later in insert
-IntSOlte : SO -> Rel (TopBot x) -> Rel x -> Rel (TopBot x)
-IntSOlte  Ro       r _ i = r i
-IntSOlte  Uo       _ l i = BRel l i
--- IntSOlte (Plo s t) r l = IntSOlte s r l +. IntSOlte t r l
--- IntSOlte (Pvo s t) r l = IntSOlte s r l /\. IntSOlte t r l
-IntSOlte (Plo s t) r l i = Either (IntSOlte s r l i) (IntSOlte t r l i)
-IntSOlte {x} (Pvo s t) r l i = (p : x ** (IntSOlte s r l (fst i, Box p), IntSOlte t r l (Box p, snd i)))
+IntSOL : SO -> Rel (TopBot x) -> Rel x -> Rel (TopBot x)
+IntSOL  Ro       r _ i = r i
+IntSOL  Uo       _ l i = BRel l i
+-- IntSOL (Plo s t) r l = IntSOL s r l +. IntSOL t r l
+-- IntSOL (Pvo s t) r l = IntSOL s r l /\. IntSOL t r l
+IntSOL (Plo s t) r l i = Either (IntSOL s r l i) (IntSOL t r l i)
+IntSOL {x} (Pvo s t) r l i = (p : x ** (IntSOL s r l (fst i, Box p), IntSOL t r l (Box p, snd i)))
 
-data MuSOlte : (f : SO) -> (l : Rel p) -> (lu : (TopBot t, TopBot t)) -> Type where
-  MkMuSOlte : IntSOlte f (MuSOlte f l) l lu -> MuSOlte f l lu
+data MuSOL : (f : SO) -> (l : Rel p) -> (lu : (TopBot t, TopBot t)) -> Type where
+  MkMuSOL : IntSOL f (MuSOL f l) l lu -> MuSOL f l lu
 
 MuTree : Rel t -> Rel (TopBot t)
-MuTree = MuSOlte SOTree
+MuTree = MuSOL SOTree
 
 MuInterval : Rel t -> Rel (TopBot t)
-MuInterval = MuSOlte SOInterval
+MuInterval = MuSOL SOInterval
 
-treeLte : {lt : Rel pt} -> MuSOlte ft lt lu1 -> MuTree lt lu1
-treeLte {lu1} {ft} {lt} {pt} (MkMuSOlte t) = go {lu=lu1} ft t 
+treeLte : {lt : Rel pt} -> MuSOL ft lt lu1 -> MuTree lt lu1
+treeLte {lu1} {ft} {lt} {pt} (MkMuSOL t) = go {lu=lu1} ft t 
   where
-  go : {lu : (TopBot pt, TopBot pt)} -> (g : SO) -> IntSOlte g (MuSOlte ft lt) lt lu -> MuTree lt lu
+  go : {lu : (TopBot pt, TopBot pt)} -> (g : SO) -> IntSOL g (MuSOL ft lt) lt lu -> MuTree lt lu
   go       Ro        f           = treeLte f
-  go       Uo        x           = MkMuSOlte $ Left x
+  go       Uo        x           = MkMuSOL $ Left x
   go      (Plo s _) (Left l)     = go s l
   go      (Plo _ t) (Right r)    = go t r
-  go {lu} (Pvo s t) (p ** (l,r)) = MkMuSOlte $ Right (p ** (go s l, go t r))
+  go {lu} (Pvo s t) (p ** (l,r)) = MkMuSOL $ Right (p ** (go s l, go t r))
 
 interface DecRel (t : Type) (l : Rel t) | l where
   decRel : (x, y : t) -> Either (l (x,y)) (l (y,x))
 
 insert : DecRel t l => MuInterval l i -> MuTree l i -> MuTree l i
-insert           (MkMuSOlte (y ** (yl,yr))) (MkMuSOlte (Left _)) = MkMuSOlte $ Right (y ** (MkMuSOlte $ Left yl, MkMuSOlte $ Left yr))
-insert @{dr} {i} (MkMuSOlte (y ** (yl,yr))) (MkMuSOlte (Right (p ** (pl,pr)))) with (decRel @{dr} y p)
-  insert {i} (MkMuSOlte (y ** (yl,yr))) (MkMuSOlte (Right (p ** (lt,rt)))) | Left  le = 
-    MkMuSOlte $ Right (p ** (insert {i=(fst i, Box p)} (MkMuSOlte (y ** (yl, le))) lt, rt))
-  insert {i} (MkMuSOlte (y ** (yl,yr))) (MkMuSOlte (Right (p ** (lt,rt)))) | Right ge = 
-    MkMuSOlte $ Right (p ** (lt, insert {i=(Box p, snd i)} (MkMuSOlte (y ** (ge, yr))) rt))
+insert           (MkMuSOL (y ** (yl,yr))) (MkMuSOL (Left _)) = MkMuSOL $ Right (y ** (MkMuSOL $ Left yl, MkMuSOL $ Left yr))
+insert @{dr} {i} (MkMuSOL (y ** (yl,yr))) (MkMuSOL (Right (p ** (pl,pr)))) with (decRel @{dr} y p)
+  insert {i} (MkMuSOL (y ** (yl,yr))) (MkMuSOL (Right (p ** (lt,rt)))) | Left  le = 
+    MkMuSOL $ Right (p ** (insert {i=(fst i, Box p)} (MkMuSOL (y ** (yl, le))) lt, rt))
+  insert {i} (MkMuSOL (y ** (yl,yr))) (MkMuSOL (Right (p ** (lt,rt)))) | Right ge = 
+    MkMuSOL $ Right (p ** (lt, insert {i=(Box p, snd i)} (MkMuSOL (y ** (ge, yr))) rt))
 
 makeTree : DecRel t l => MuJJ f t -> MuTree l (Bot, Top)
-makeTree = foldr (\p => insert (MkMuSOlte (p ** ((), ())))) (MkMuSOlte $ Left ())
+makeTree = foldr (\p => insert (MkMuSOL (p ** ((), ())))) (MkMuSOL $ Left ())
 
 MuList : Rel t -> Rel (TopBot t)
-MuList = MuSOlte SOList
+MuList = MuSOL SOList
 
 -- seems Idris doesn't have a problem with termination here, and splitting recursion actually gets us into trouble with implicit passing
 merge : DecRel t l => MuList l i -> MuList l i -> MuList l i
-merge (MkMuSOlte (Left _)) ys = ys
-merge xs (MkMuSOlte (Left _)) = xs
-merge @{dr} (MkMuSOlte (Right (x ** (lx, xs)))) (MkMuSOlte (Right (y ** (ly, ys)))) with (decRel @{dr} x y)
-  merge (MkMuSOlte (Right (x ** (lx, xs)))) (MkMuSOlte (Right (y ** (ly, ys)))) | Left le = 
-    MkMuSOlte $ Right (x ** (lx, merge xs (MkMuSOlte (Right (y ** (le, ys))))))
-  merge (MkMuSOlte (Right (x ** (lx, xs)))) (MkMuSOlte (Right (y ** (ly, ys)))) | Right ge = 
-    MkMuSOlte $ Right (y ** (ly, merge (MkMuSOlte (Right (x ** (ge, xs)))) ys))
+merge (MkMuSOL (Left _)) ys = ys
+merge xs (MkMuSOL (Left _)) = xs
+merge @{dr} (MkMuSOL (Right (x ** (lx, xs)))) (MkMuSOL (Right (y ** (ly, ys)))) with (decRel @{dr} x y)
+  merge (MkMuSOL (Right (x ** (lx, xs)))) (MkMuSOL (Right (y ** (ly, ys)))) | Left le = 
+    MkMuSOL $ Right (x ** (lx, merge xs (MkMuSOL (Right (y ** (le, ys))))))
+  merge (MkMuSOL (Right (x ** (lx, xs)))) (MkMuSOL (Right (y ** (ly, ys)))) | Right ge = 
+    MkMuSOL $ Right (y ** (ly, merge (MkMuSOL (Right (x ** (ge, xs)))) ys))
 
 DecRel t l => Semigroup (MuList l lu) where
   (<+>) = merge
@@ -196,13 +196,13 @@ interface BRelProv (l : Rel t) (lu : (TopBot t, TopBot t)) where
   provide : BRel l lu 
 
 [olMon] (DecRel t l, BRelProv l lu) => Monoid (MuList l lu) where
-  neutral {l} {lu} = MkMuSOlte $ Left $ provide {l} {lu}
+  neutral {l} {lu} = MkMuSOL $ Left $ provide {l} {lu}
 
 BRelProv l (Bot, Top) where
   provide = ()
 
 mergeJJ : DecRel p l => MuJJ f p -> MuList l (Bot, Top)  
-mergeJJ = crush @{olMon} (\p => MkMuSOlte $ Right (p ** ((), MkMuSOlte $ Left ())))
+mergeJJ = crush @{olMon} (\p => MkMuSOL $ Right (p ** ((), MkMuSOL $ Left ())))
 
 QLTree : JJ
 QLTree = (U `Pl` P) `Pl` (R `Ti` R)
@@ -219,37 +219,37 @@ mergeSort = mergeJJ . foldr twistIn (MkMuJJ (Left (Left ())))
 -- NAIVE 
 
 -- concat : MuList l (x,y) -> MuList l (y,z) -> MuList l (x,z)
--- concat (MkMuSOlte (Left   t))              ys = ?wat
--- concat (MkMuSOlte (Right (x ** (xl, xs)))) ys = MkMuSOlte (Right (x ** (xl, concat xs ys)))
+-- concat (MkMuSOL (Left   t))              ys = ?wat
+-- concat (MkMuSOL (Right (x ** (xl, xs)))) ys = MkMuSOL (Right (x ** (xl, concat xs ys)))
 
 sandwich : (MuList l /\. MuList l) i -> MuList l i
-sandwich (p ** (MkMuSOlte (Left t), ys)) = MkMuSOlte (Right (p ** (t,ys)))
-sandwich (p ** (MkMuSOlte (Right (x ** (xl, xs))), ys)) = MkMuSOlte (Right (x ** (xl, assert_total $ sandwich (p ** (xs, ys)))))
+sandwich (p ** (MkMuSOL (Left t), ys)) = MkMuSOL (Right (p ** (t,ys)))
+sandwich (p ** (MkMuSOL (Right (x ** (xl, xs))), ys)) = MkMuSOL (Right (x ** (xl, assert_total $ sandwich (p ** (xs, ys)))))
 
 flatten : MuTree l i -> MuList l i
-flatten (MkMuSOlte $ Left x) = MkMuSOlte $ Left x
-flatten (MkMuSOlte $ Right (p ** (l, r))) = sandwich (p ** (flatten l, flatten r))
+flatten (MkMuSOL $ Left x) = MkMuSOL $ Left x
+flatten (MkMuSOL $ Right (p ** (l, r))) = sandwich (p ** (flatten l, flatten r))
 
-flattenSOlte : MuSOlte f l i -> MuList l i
-flattenSOlte = flatten . treeLte
+flattenSOL : MuSOL f l i -> MuList l i
+flattenSOL = flatten . treeLte
 -}
 
 {-
 -- COMPLICATED 
 
-flapp : {l : Rel p} -> (g : SO) -> (((IntSOlte g) (MuSOlte ft l) l) /\. MuList l) lu -> MuList l lu
-flapp {ft}  Ro       (p ** (MkMuSOlte x,ys))     = assert_total $ flapp ft (p ** (x, ys))
-flapp       Uo       (p ** (t, ys))              = MkMuSOlte (Right (p ** (t, ys)))
+flapp : {l : Rel p} -> (g : SO) -> (((IntSOL g) (MuSOL ft l) l) /\. MuList l) lu -> MuList l lu
+flapp {ft}  Ro       (p ** (MkMuSOL x,ys))     = assert_total $ flapp ft (p ** (x, ys))
+flapp       Uo       (p ** (t, ys))              = MkMuSOL (Right (p ** (t, ys)))
 flapp      (Plo s _) (p ** (Left l, ys))         = flapp s (p ** (l, ys))
 flapp      (Plo _ t) (p ** (Right r, ys))        = flapp t (p ** (r, ys))
 flapp      (Pvo s t) (p ** ((p1 ** (l, r)), ys)) = flapp s (p1 ** (l, flapp t (p ** (r, ys))))
 
-flatten : MuSOlte f l i -> MuList l i
-flatten {f} (MkMuSOlte t) = go f t
+flatten : MuSOL f l i -> MuList l i
+flatten {f} (MkMuSOL t) = go f t
   where
-  go : (g : SO) -> (IntSOlte g) (MuSOlte ft l) l lu -> MuList l lu
+  go : (g : SO) -> (IntSOL g) (MuSOL ft l) l lu -> MuList l lu
   go  Ro        t            = flatten t
-  go  Uo        t            = MkMuSOlte (Left t)
+  go  Uo        t            = MkMuSOL (Left t)
   go (Plo s _) (Left l)      = go s l
   go (Plo _ t) (Right r)     = go t r
   go (Pvo s t) (p ** (l, r)) = flapp s (p ** (l, go t r))
@@ -259,18 +259,18 @@ RepL : Rel p -> Rel (TopBot p)
 RepL {p} l (n, u) = {m : TopBot p} -> BRel l (m,n) -> MuList l (m, u)
 
 concat : MuList ll (l, n) -> RepL ll (n, u) -> MuList ll (l, u)
-concat (MkMuSOlte (Left l)) ys = ys l
-concat (MkMuSOlte (Right (x ** (l, xs)))) ys =  MkMuSOlte (Right (x ** (l, concat xs ys)))
+concat (MkMuSOL (Left l)) ys = ys l
+concat (MkMuSOL (Right (x ** (l, xs)))) ys =  MkMuSOL (Right (x ** (l, concat xs ys)))
 
-flapp : MuSOlte f ll (l,n) -> RepL ll (n,u) -> MuList ll (l, u)
+flapp : MuSOL f ll (l,n) -> RepL ll (n,u) -> MuList ll (l, u)
 flapp t ys = go Ro t ys
   where
-  go : (g : SO) -> (IntSOlte g) (MuSOlte ft ll) ll (l,n) -> RepL ll (n,u) -> MuList ll (l,u)
-  go  Ro       (MkMuSOlte t) ys = go ft t ys
+  go : (g : SO) -> (IntSOL g) (MuSOL ft ll) ll (l,n) -> RepL ll (n,u) -> MuList ll (l,u)
+  go  Ro       (MkMuSOL t) ys = go ft t ys
   go  Uo        z            ys = ys z
   go (Plo s _) (Left l)      ys = go s l ys
   go (Plo _ t) (Right r)     ys = go t r ys
-  go (Pvo s t) (p ** (l, r)) ys = go s l (\z => MkMuSOlte $ Right (p ** (z, go t r ys)))
+  go (Pvo s t) (p ** (l, r)) ys = go s l (\z => MkMuSOL $ Right (p ** (z, go t r ys)))
 
-flatten : MuSOlte f ll (l, u) -> MuList ll (l, u)
-flatten t = flapp t (MkMuSOlte . Left)
+flatten : MuSOL f ll (l, u) -> MuList ll (l, u)
+flatten t = flapp t (MkMuSOL . Left)
