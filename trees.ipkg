@@ -3,6 +3,12 @@ package trees
 sourcedir = src
 
 modules = Functor
+        , These
+        , TrieMap
         , Main
 
-opts = "-p contrib -p bi"
+main = Main
+
+executable = test
+
+opts = "-p contrib"
